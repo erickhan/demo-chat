@@ -1,4 +1,6 @@
 import uuid
+import os
+import csv
 from datetime import datetime
 
 class BillPaymentSystem:
@@ -33,6 +35,27 @@ class BillPaymentSystem:
         print(f"DEBUG: Entering bill with data: customer_name='{customer_name}', previous_bill='{previous_bill}', payment_amount='{payment_amount}', balance_forward='{balance_forward}', amount_due='{amount_due}', due_date='{due_date}', received_date='{received_date}', new_charges='{new_charges}'")
         print(f"Attachment saved as /workspaces/demo-chat/data/attachments/{bill_id}_aps_bill_scan.pdf")
         print(f"Bill {bill_id} entered successfully")
+        # code for making the csv file starts here.
+        csv_filename = "processed_bills.csv"
+        file_exists = os.path.isfile(csv_filename)
+
+        with open(csv_filename, "a", newline="") as csvfile:
+            fieldnames = [
+                "bill_id", "customer_name", "previous_bill", "payment_amount",
+                "balance_forward", "amount_due", "due_date", "received_date",
+                "new_charges", "state", "created_by", "created_at", "updated_at", "verified_by", "payment_scheduled_by", "paid_by"
+            ]
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+            if not file_exists:
+                writer.writeheader()  # Write the header row only if the file is newly created
+
+            row = {"bill_id": bill_id}
+            row.update(bill_data)
+            writer.writerow(row)
+
+        print(f"CSV file '{csv_filename}' updated successfully.")
+
         return bill_id
 
     def verify_bill(self, bill_id):
