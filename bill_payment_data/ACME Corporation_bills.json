@@ -1,0 +1,118 @@
+{
+  "JohnDoe_20230215": {
+    "bill_id": "JohnDoe_20230215",
+    "account_number": "0123456789",
+    "customer_name": "John Doe",
+    "service_address": "123 Main St",
+    "billing_period": "January 1 - January 31, 2023",
+    "due_date": "2023-02-15",
+    "received_date": "2023-02-10",
+    "amount_due": 142.75,
+    "previous_bill": 100.0,
+    "payment_amount": 50.0,
+    "balance_forward": 50.0,
+    "new_charges": 92.75,
+    "bill_type": "Utility - Electric",
+    "has_attachment": true,
+    "attachment_filename": "aps_bill_scan.pdf",
+    "current_state": "ARCHIVED",
+    "scheduled_payment_date": "2023-05-16",
+    "actual_payment_date": "2025-03-04",
+    "notes": [
+      {
+        "date": "2025-03-04 18:21:13",
+        "user": "mary.smith",
+        "note": "All fields verified against original bill"
+      },
+      {
+        "date": "2025-03-04 18:21:13",
+        "user": "mary.smith",
+        "note": "Payment scheduled for 2023-05-16 (90 days after due date)"
+      },
+      {
+        "date": "2025-03-04 18:21:13",
+        "user": "mary.smith",
+        "note": "Submitted for approval"
+      },
+      {
+        "date": "2025-03-04 18:21:13",
+        "user": "robert.jones",
+        "note": "Approved - within budget"
+      },
+      {
+        "date": "2025-03-04 18:21:13",
+        "user": "system",
+        "note": "Payment processing initiated"
+      },
+      {
+        "date": "2025-03-04 18:21:13",
+        "user": "system",
+        "note": "Payment processed. Confirmation: PMT-20250304182113"
+      },
+      {
+        "date": "2025-03-04 18:21:13",
+        "user": "system",
+        "note": "Bill archived"
+      }
+    ],
+    "history": [
+      {
+        "date": "2025-03-04 18:21:13",
+        "from_state": "RECEIVED",
+        "to_state": "ENTERED",
+        "user": "mary.smith",
+        "notes": "Bill entered into system"
+      },
+      {
+        "date": "2025-03-04 18:21:13",
+        "from_state": "ENTERED",
+        "to_state": "VERIFIED",
+        "user": "mary.smith",
+        "notes": "All fields verified against original bill"
+      },
+      {
+        "date": "2025-03-04 18:21:13",
+        "from_state": "VERIFIED",
+        "to_state": "PAYMENT_SCHEDULED",
+        "user": "mary.smith",
+        "notes": "Payment scheduled for 2023-05-16 (90 days after due date)"
+      },
+      {
+        "date": "2025-03-04 18:21:13",
+        "from_state": "PAYMENT_SCHEDULED",
+        "to_state": "PENDING_APPROVAL",
+        "user": "mary.smith",
+        "notes": "Submitted for approval"
+      },
+      {
+        "date": "2025-03-04 18:21:13",
+        "from_state": "PENDING_APPROVAL",
+        "to_state": "APPROVED",
+        "user": "robert.jones",
+        "notes": "Approved - within budget"
+      },
+      {
+        "date": "2025-03-04 18:21:13",
+        "from_state": "APPROVED",
+        "to_state": "PAYMENT_PENDING",
+        "user": "system",
+        "notes": "Payment processing initiated"
+      },
+      {
+        "date": "2025-03-04 18:21:13",
+        "from_state": "PAYMENT_PENDING",
+        "to_state": "PAID",
+        "user": "system",
+        "notes": "Payment processed. Confirmation: PMT-20250304182113"
+      },
+      {
+        "date": "2025-03-04 18:21:13",
+        "from_state": "PAID",
+        "to_state": "ARCHIVED",
+        "user": "system",
+        "notes": "Bill archived"
+      }
+    ],
+    "payment_confirmation": "PMT-20250304182113"
+  }
+}

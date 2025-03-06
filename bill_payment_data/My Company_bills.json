@@ -1,0 +1,246 @@
+{
+  "0123456789_20230215": {
+    "bill_id": "0123456789_20230215",
+    "account_number": "0123456789",
+    "customer_name": "John Doe",
+    "service_address": "123 Main St",
+    "billing_period": "January 1 - January 31, 2023",
+    "due_date": "2023-02-15",
+    "received_date": "2023-02-01",
+    "amount_due": 142.75,
+    "previous_bill": 100.0,
+    "payment_amount": 50.0,
+    "balance_forward": 50.0,
+    "new_charges": 92.75,
+    "bill_type": "Utility - Electric",
+    "has_attachment": true,
+    "attachment_filename": "aps_bill_scan.pdf",
+    "current_state": "PENDING_APPROVAL",
+    "scheduled_payment_date": "2023-05-16",
+    "actual_payment_date": null,
+    "notes": [
+      {
+        "date": "2025-03-04 17:55:18",
+        "user": "jane.accountant",
+        "note": "Verified all information against original bill"
+      },
+      {
+        "date": "2025-03-04 17:55:18",
+        "user": "jane.accountant",
+        "note": "Payment scheduled for 2023-05-16 (90 days after due date)"
+      },
+      {
+        "date": "2025-03-04 17:55:18",
+        "user": "jane.accountant",
+        "note": "Submitted for approval"
+      }
+    ],
+    "history": [
+      {
+        "date": "2025-03-04 17:55:18",
+        "from_state": "RECEIVED",
+        "to_state": "ENTERED",
+        "user": "jane.accountant",
+        "notes": "Bill entered into system"
+      },
+      {
+        "date": "2025-03-04 17:55:18",
+        "from_state": "ENTERED",
+        "to_state": "VERIFIED",
+        "user": "jane.accountant",
+        "notes": "Verified all information against original bill"
+      },
+      {
+        "date": "2025-03-04 17:55:18",
+        "from_state": "VERIFIED",
+        "to_state": "PAYMENT_SCHEDULED",
+        "user": "jane.accountant",
+        "notes": "Payment scheduled for 2023-05-16 (90 days after due date)"
+      },
+      {
+        "date": "2025-03-04 17:55:18",
+        "from_state": "PAYMENT_SCHEDULED",
+        "to_state": "PENDING_APPROVAL",
+        "user": "jane.accountant",
+        "notes": "Submitted for approval"
+      }
+    ]
+  },
+  "N/A_Oct 1, 2025": {
+    "bill_id": "N/A_Oct 1, 2025",
+    "account_number": "N/A",
+    "customer_name": "Gene Simmons",
+    "service_address": "N/A",
+    "billing_period": "N/A",
+    "due_date": "Oct 1, 2025",
+    "received_date": "Mar 3, 2025",
+    "amount_due": 203.88,
+    "previous_bill": 178.84,
+    "payment_amount": -178.84,
+    "balance_forward": 0.0,
+    "new_charges": 203.88,
+    "bill_type": "Utility - Electric",
+    "has_attachment": true,
+    "attachment_filename": "aps_bill_scan.pdf",
+    "current_state": "VERIFIED",
+    "scheduled_payment_date": null,
+    "actual_payment_date": null,
+    "notes": [
+      {
+        "date": "2025-03-04 17:44:56",
+        "user": "jane.accountant",
+        "note": "Verified all information against original bill"
+      }
+    ],
+    "history": [
+      {
+        "date": "2025-03-04 17:44:56",
+        "from_state": "RECEIVED",
+        "to_state": "ENTERED",
+        "user": "jane.accountant",
+        "notes": "Bill entered into system"
+      },
+      {
+        "date": "2025-03-04 17:44:56",
+        "from_state": "ENTERED",
+        "to_state": "VERIFIED",
+        "user": "jane.accountant",
+        "notes": "Verified all information against original bill"
+      }
+    ]
+  },
+  "N/A_20251001": {
+    "bill_id": "N/A_20251001",
+    "account_number": "N/A",
+    "customer_name": "Gene Simmons",
+    "service_address": "N/A",
+    "billing_period": "N/A",
+    "due_date": "2025-10-01",
+    "received_date": "2025-03-03",
+    "amount_due": 203.88,
+    "previous_bill": 178.84,
+    "payment_amount": -178.84,
+    "balance_forward": 0.0,
+    "new_charges": 203.88,
+    "bill_type": "Utility - Electric",
+    "has_attachment": true,
+    "attachment_filename": "aps_bill_scan.pdf",
+    "current_state": "PENDING_APPROVAL",
+    "scheduled_payment_date": "2025-12-30",
+    "actual_payment_date": null,
+    "notes": [
+      {
+        "date": "2025-03-04 18:11:36",
+        "user": "jane.accountant",
+        "note": "Verified all information against original bill"
+      },
+      {
+        "date": "2025-03-04 18:11:36",
+        "user": "jane.accountant",
+        "note": "Payment scheduled for 2025-12-30 (90 days after due date)"
+      },
+      {
+        "date": "2025-03-04 18:11:36",
+        "user": "jane.accountant",
+        "note": "Submitted for approval"
+      }
+    ],
+    "history": [
+      {
+        "date": "2025-03-04 18:11:36",
+        "from_state": "RECEIVED",
+        "to_state": "ENTERED",
+        "user": "jane.accountant",
+        "notes": "Bill entered into system"
+      },
+      {
+        "date": "2025-03-04 18:11:36",
+        "from_state": "ENTERED",
+        "to_state": "VERIFIED",
+        "user": "jane.accountant",
+        "notes": "Verified all information against original bill"
+      },
+      {
+        "date": "2025-03-04 18:11:36",
+        "from_state": "VERIFIED",
+        "to_state": "PAYMENT_SCHEDULED",
+        "user": "jane.accountant",
+        "notes": "Payment scheduled for 2025-12-30 (90 days after due date)"
+      },
+      {
+        "date": "2025-03-04 18:11:36",
+        "from_state": "PAYMENT_SCHEDULED",
+        "to_state": "PENDING_APPROVAL",
+        "user": "jane.accountant",
+        "notes": "Submitted for approval"
+      }
+    ]
+  },
+  "GeneSimmons_20251001": {
+    "bill_id": "GeneSimmons_20251001",
+    "account_number": "N/A",
+    "customer_name": "Gene Simmons",
+    "service_address": "N/A",
+    "billing_period": "N/A",
+    "due_date": "2025-10-01",
+    "received_date": "2025-03-03",
+    "amount_due": 203.88,
+    "previous_bill": 178.84,
+    "payment_amount": -178.84,
+    "balance_forward": 0.0,
+    "new_charges": 203.88,
+    "bill_type": "Utility - Electric",
+    "has_attachment": true,
+    "attachment_filename": "aps_bill_scan.pdf",
+    "current_state": "PENDING_APPROVAL",
+    "scheduled_payment_date": "2025-12-30",
+    "actual_payment_date": null,
+    "notes": [
+      {
+        "date": "2025-03-04 18:22:17",
+        "user": "jane.accountant",
+        "note": "Verified all information against original bill"
+      },
+      {
+        "date": "2025-03-04 18:22:17",
+        "user": "jane.accountant",
+        "note": "Payment scheduled for 2025-12-30 (90 days after due date)"
+      },
+      {
+        "date": "2025-03-04 18:22:17",
+        "user": "jane.accountant",
+        "note": "Submitted for approval"
+      }
+    ],
+    "history": [
+      {
+        "date": "2025-03-04 18:22:17",
+        "from_state": "RECEIVED",
+        "to_state": "ENTERED",
+        "user": "jane.accountant",
+        "notes": "Bill entered into system"
+      },
+      {
+        "date": "2025-03-04 18:22:17",
+        "from_state": "ENTERED",
+        "to_state": "VERIFIED",
+        "user": "jane.accountant",
+        "notes": "Verified all information against original bill"
+      },
+      {
+        "date": "2025-03-04 18:22:17",
+        "from_state": "VERIFIED",
+        "to_state": "PAYMENT_SCHEDULED",
+        "user": "jane.accountant",
+        "notes": "Payment scheduled for 2025-12-30 (90 days after due date)"
+      },
+      {
+        "date": "2025-03-04 18:22:17",
+        "from_state": "PAYMENT_SCHEDULED",
+        "to_state": "PENDING_APPROVAL",
+        "user": "jane.accountant",
+        "notes": "Submitted for approval"
+      }
+    ]
+  }
+}
