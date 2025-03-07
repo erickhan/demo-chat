@@ -3,3 +3,5 @@ pypdf
 google.generativeai
 streamlit
 OpenAI
+cryptograpthy
+pandas
