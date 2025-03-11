@@ -1,6 +1,7 @@
 import os
 import json
 import datetime
+import pandas as pd
 from openai import OpenAI
 
 api_key = os.environ.get("GOOGLE_GEMINI_KEY")
@@ -8,8 +9,8 @@ api_key = os.environ.get("GOOGLE_GEMINI_KEY")
 if api_key:
     credentials_set = True
     client = OpenAI(
-    api_key=api_key,
-    base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
+        api_key=api_key,
+        base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
     )
 else:
     print("GOOGLE_GEMINI_KEY environment variable not found.")
@@ -22,31 +23,33 @@ def parse_data_with_gemini(text, data_type):
         return None
 
     try:
-
-        prompt_old = f"""
-        Extract the following information from the {data_type} text and return it as a JSON object:
-        Customer Name, Previous bill, Payment, Balance forward, New charges, Total amount due, Due date (YYYY-MM-DD), Received date (YYYY-MM-DD).
-
-        {data_type} Text:
-        {text}
-
-        JSON:
-        """
-
         prompt = f"""
-        You are an AI assistant that extracts information from bill documents.
-        Extract the following fields from the provided {data_type} text:
-
-        - payee: The title of the bill. Remove any leading '#' characters.
-        - customer_name: The customer's name.
-        - previous_bill: the previous bill number if available.
-        - payment: the payment amount if available.
-        - balance_forward: the balance forward amount if available.
-        - total_amount_due: the amount due if available.
-        - due_date: the due date if available.
-        - received_date: the received date if available.
-        - new_charges: the new charges if available.
-        - note: if available
+        Extract the following information from the provided bill text:
+        - Customer Name
+        - Previous mortgage payment
+        - Payment
+        - Balance forward
+        - New charges
+        - Total amount due (treat "Total 2025 Property Taxes" the same as "Total amount due")
+        - Due date
+        - Received date
+        - Principal balance
+        - Interest rate
+        - Loan term
+        - Payment schedule
+        - Payment due date
+        - Principal payment
+        - Interest payment
+        - Property taxes (monthly)
+        - Homeowners Insurance (monthly)
+        - Escrow (monthly)
+        - Late fee
+        - Subtotal
+        - State property tax assessment
+        - County property tax assessment
+        - City property tax assessment
+        - Franchise fee
+        - Payee
 
         Here is the {data_type} text:
         {text}
@@ -85,60 +88,37 @@ def parse_data_with_gemini(text, data_type):
             # Clean payee
             if "payee" in converted_json and converted_json["payee"] is not None and isinstance(converted_json["payee"], str):
                 converted_json["payee"] = converted_json["payee"].lstrip("#").strip()
+            else:
+                converted_json["payee"] = "Unknown Payee"
 
-            if "Due date" in response_json and response_json["Due date"]:
+            if "due_date" in converted_json and converted_json["due_date"]:
                 try:
-                    datetime.datetime.strptime(response_json["Due date"], "%Y-%m-%d")
+                    datetime.datetime.strptime(converted_json["due_date"], "%Y-%m-%d")
                 except ValueError:
                     try:
-                        date_obj = datetime.datetime.strptime(response_json["Due date"], "%b %d, %Y")
-                        response_json["Due date"] = date_obj.strftime("%Y-%m-%d")
+                        date_obj = datetime.datetime.strptime(converted_json["due_date"], "%b %d, %Y")
+                        converted_json["due_date"] = date_obj.strftime("%Y-%m-%d")
                     except ValueError:
-                        response_json["Due date"] = None
+                        converted_json["due_date"] = None
 
-            if "Received date" in response_json and response_json["Received date"]:
+            if "received_date" in converted_json and converted_json["received_date"]:
                 try:
-                    datetime.datetime.strptime(response_json["Received date"], "%Y-%m-%d")
+                    datetime.datetime.strptime(converted_json["received_date"], "%Y-%m-%d")
                 except ValueError:
                     try:
-                        date_obj = datetime.datetime.strptime(response_json["Received date"], "%b %d, %Y")
-                        response_json["Received date"] = date_obj.strftime("%Y-%m-%d")
+                        date_obj = datetime.datetime.strptime(converted_json["received_date"], "%b %d, %Y")
+                        converted_json["received_date"] = date_obj.strftime("%Y-%m-%d")
                     except ValueError:
-                        response_json["Received date"] = None
+                        converted_json["received_date"] = None
 
             return converted_json
         except json.JSONDecodeError as e:
             print(f"DEBUG: Gemini Response: {response.choices[0].message.content}")
             print(f"DEBUG: JSONDecodeError: {e}")
             return None
-    except FileNotFoundError:
-        print("APS_bill.md file not found in sample_files directory. os.cwd: ", os.getcwd())
-        return None
     except Exception as e:
         print(f"Error using Gemini API: {e}")
         return None
-
-if credentials_set:
-    print("Gemini API Ready")
-    if __name__ == "__main__":
-        try:
-            file_path = os.path.join("sample_files", "APS_bill.md")
-            with open(file_path, "r") as f:
-                markdown_text = f.read()
-
-            result = parse_data_with_gemini(markdown_text, "markdown")
-            if result:
-                print(result)
-            else:
-                print("Failed to parse bill data using Gemini API.")
-        except FileNotFoundError:
-            print("APS_bill.md file not found in sample_files directory. os.cwd: ", os.getcwd())
-        except Exception as e:
-            print(f"Error reading or processing APS_bill.md: {e}")
-
-else:
-    print("Gemini API initialization skipped due to missing API key.")
-
 
 def generate_chat_response(processed_text, prompt):
     """Generates a chat response using the same Gemini API client."""
@@ -160,6 +140,16 @@ def generate_chat_response(processed_text, prompt):
 
 if credentials_set:
     print("Gemini API Ready")
-    # ... (Your testing code)
 else:
     print("Gemini API initialization skipped due to missing API key.")
+
+def update_csv(bill_data, file_path='bills.csv'):
+    """Updates the CSV file with the new bill data."""
+    try:
+        df = pd.read_csv(file_path)
+    except FileNotFoundError:
+        df = pd.DataFrame(columns=bill_data.keys())
+    
+    new_row = pd.DataFrame([bill_data])
+    df = pd.concat([df, new_row], ignore_index=True)
+    df.to_csv(file_path, index=False)

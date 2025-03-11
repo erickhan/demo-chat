@@ -7,6 +7,7 @@ import pypdf
 import pandas as pd
 from gemini_parser import parse_data_with_gemini, generate_chat_response  # Import chat function
 import base64
+import uuid
 
 def extract_text_from_pdf(pdf_bytes):
     """Extracts text from a PDF file."""
@@ -35,6 +36,17 @@ def load_csv(file_path):
     except Exception as e:
         st.error(f"Error loading CSV file: {e}")
         return None
+
+def update_csv(bill_data, file_path='bills.csv'):
+    """Updates the CSV file with the new bill data."""
+    try:
+        df = pd.read_csv(file_path)
+    except FileNotFoundError:
+        df = pd.DataFrame(columns=bill_data.keys())
+    
+    new_row = pd.DataFrame([bill_data])
+    df = pd.concat([df, new_row], ignore_index=True)
+    df.to_csv(file_path, index=False)
 
 # Set up header with a title on the left and a demo button on the right.
 col1, col2 = st.columns([0.8, 0.2])
@@ -85,7 +97,7 @@ with st.container():
     if ss.demo_mode:
         st.success(f"📂 Demo File Loaded: guidance.pdf")
     else:
-        guidance_file = st.file_uploader("Instructions file", type=('pdf'), key='pdf_guidance')
+        guidance_file = st.file_uploader("Instructions file", type=['pdf', 'md'], key='pdf_guidance')
         if guidance_file is not None:
             ss.pdf_ref_guidance = guidance_file.getvalue()
 
@@ -99,10 +111,17 @@ with st.container():
                 except Exception as e:
                     st.error(f"Failed to load Markdown: {e}")
             else:
-                st.write("Guidance: Uploaded PDF")
+                st.write("Guidance: Uploaded PDF or MD")
                 st.write("  File size:", len(ss.pdf_ref_guidance), "bytes")
                 try:
-                    st.write(extract_text_from_pdf(ss.pdf_ref_guidance))
+                    if st.session_state.pdf_guidance.type == 'application/pdf':
+                        # Save the PDF to a temporary file and display it
+                        with open("temp_guidance.pdf", "wb") as f:
+                            f.write(ss.pdf_ref_guidance)
+                        display_pdf("temp_guidance.pdf")
+                    else:
+                        text = ss.pdf_ref_guidance.decode("utf-8", errors="ignore")
+                        st.markdown(text)
                 except Exception as e:
                     st.error(f"Error extracting text from PDF: {e}")
 
@@ -124,6 +143,8 @@ with st.container():
 
         # Load bill files and process them
         bill_files = [f for f in os.listdir(sample_files_dir) if f.endswith("_bill.md")]
+        # Add a text input field for additional notes
+        additional_note = st.text_input("Enter additional notes:")
         for bill_file in bill_files:
             demo_bill_path = os.path.join(sample_files_dir, bill_file)
             with open(demo_bill_path, "rb") as f:
@@ -136,13 +157,16 @@ with st.container():
                         st.error(f"Error parsing bill data from {bill_file} in demo mode.")
                         continue  # Move to the next file
 
+                    # Generate a unique bill_id
+                    bill_data["bill_id"] = str(uuid.uuid4())
+
                     ss.all_bill_data.append(bill_data)  # Add the parsed data to the list
 
                     # Process the bill data using your BillPaymentSystem
                     ss.bill_system.set_current_user("demo", "AP Clerk")
                     bill_id = ss.bill_system.enter_bill(
                         customer_name=bill_data.get("customer_name"),
-                        payee=bill_data.get("payee", "Unknown Payee"),  # Ensure that the payee is passed.
+                        payee=bill_data.get("payee"),  # No default value.
                         previous_bill=bill_data.get("previous_bill"),
                         payment_amount=bill_data.get("payment"),
                         balance_forward=bill_data.get("balance_forward"),
@@ -150,23 +174,17 @@ with st.container():
                         due_date=bill_data.get("due_date"),
                         received_date=bill_data.get("received_date"),
                         new_charges=bill_data.get("new_charges"),
-                        note=""  # Add your note logic here
+                        note=additional_note  # Pass the additional note
                     )
-                    ss.bill_system.verify_bill(bill_id)
-                    ss.bill_system.schedule_payment(bill_id)
-                    print(f"Bill {bill_id} data added and processed from {bill_file} (Demo Mode).\n")
+
+                    update_csv(bill_data)  # Update the CSV file with the new bill data
 
                 except Exception as e:
                     st.error(f"Error processing {bill_file}: {e}")
         ss.bill_data = ss.all_bill_data[-1] if ss.all_bill_data else None  # Set ss.bill_data to the last processed bill, or None if there are no bills.
-    else:
-        toProcess_file = st.file_uploader("Bill to Process file (PDF or MD)", type=['pdf', 'md'], key='pdf_toProcess')
-        if toProcess_file is not None:
-            ss.pdf_ref_toProcess = toProcess_file.getvalue()
 
-    with st.expander("File Preview"):
-        if ss.pdf_ref_toProcess is not None:
-            if ss.demo_mode:
+        with st.expander("File Preview"):
+            if ss.pdf_ref_toProcess is not None:
                 st.write("Bill: bill_example_APS.md")
                 st.write(f"  File size: {len(ss.pdf_ref_toProcess)} bytes")
                 try:
@@ -174,7 +192,23 @@ with st.container():
                     st.markdown(text)
                 except Exception as e:
                     st.error(f"Failed to load Markdown: {e}")
-            else:
+
+        with st.expander("Edit File (Optional)"):
+            if ss.pdf_ref_toProcess is not None:
+                try:
+                    text = ss.pdf_ref_toProcess.decode("utf-8", errors="ignore")
+                    edited_text = st.text_area("Edit Markdown", text, height=300, key="demo_edit")
+                    ss.edited_text = edited_text
+                except Exception as e:
+                    st.error(f"Failed to load Markdown: {e}")
+
+    else:
+        toProcess_file = st.file_uploader("Bill to Process file (PDF or MD)", type=['pdf', 'md'], key='pdf_toProcess')
+        if toProcess_file is not None:
+            ss.pdf_ref_toProcess = toProcess_file.getvalue()
+
+        with st.expander("File Preview"):
+            if ss.pdf_ref_toProcess is not None:
                 st.write("Bill: Uploaded PDF or MD")
                 st.write("  File size:", len(ss.pdf_ref_toProcess), "bytes")
                 try:
@@ -183,23 +217,14 @@ with st.container():
                         with open("temp.pdf", "wb") as f:
                             f.write(ss.pdf_ref_toProcess)
                         display_pdf("temp.pdf")
-                        text = extract_text_from_pdf(ss.pdf_ref_toProcess)
                     else:
                         text = ss.pdf_ref_toProcess.decode("utf-8", errors="ignore")
-                    st.markdown(text)
+                        st.markdown(text)
                 except Exception as e:
                     st.error(f"Error extracting text from PDF: {e}")
 
-    with st.expander("Edit File (Optional)"):
-        if ss.pdf_ref_toProcess is not None:
-            if ss.demo_mode:
-                try:
-                    text = ss.pdf_ref_toProcess.decode("utf-8", errors="ignore")
-                    edited_text = st.text_area("Edit Markdown", text, height=300, key="demo_edit")
-                    ss.edited_text = edited_text
-                except Exception as e:
-                    st.error(f"Failed to load Markdown: {e}")
-            else:
+        with st.expander("Edit File (Optional)"):
+            if ss.pdf_ref_toProcess is not None:
                 try:
                     if toProcess_file.type == 'application/pdf':
                         text = extract_text_from_pdf(ss.pdf_ref_toProcess)
@@ -210,21 +235,17 @@ with st.container():
                 except Exception as e:
                     st.error(f"Error extracting text from PDF: {e}")
 
-    with st.expander("Add Notes"):
-        # Add a text input field for additional notes
-        additional_note = st.text_input("Enter additional notes:")
-
     if st.button("Process"):
         print("--- Process Button Clicked ---")  # Indicate that the process started
 
         try:
             if ss.demo_mode:
                 print("--- Demo Mode Activated ---")
-                if bill_data is None:
+                if ss.bill_data is None:
                     st.error("Error parsing bill data in demo mode.")
                     st.stop()
                 bill_data = ss.bill_data  # This line ensures we are using the pre-parsed data.
-                # Debugging: Inspect bill_data before entering the bill
+                 # Debugging: Inspect bill_data before entering the bill
                 print("--- Bill Data Before Enter Bill ---")
                 print(bill_data)
                 print("-----------------------------------")
@@ -259,11 +280,6 @@ with st.container():
                     note=additional_note  # Pass the additional note
                 )
 
-                # Now that the user is set, the bill can be verified and scheduled.
-                # ss.bill_system.verify_bill(bill_id) #commented out because it was causing errors
-                # ss.bill_system.schedule_payment(bill_id) #commented out because it was causing errors
-                print(f"Bill {bill_id} data added and processed (Demo Mode).\n")
-
             else:
                 print("--- Standard Mode Activated (File Processing) ---")
                 ss.bill_system.set_current_user("appUser", "AP Clerk")
@@ -275,6 +291,9 @@ with st.container():
                     st.error(f"Error parsing data with Gemini API. Data type: {data_type}")
                     st.stop()
                 ss.bill_data = bill_data
+
+                # Generate a unique bill_id
+                bill_data["bill_id"] = str(uuid.uuid4())
 
                 if ss.bill_data:
                     ss.processed_text = str(ss.bill_data)
@@ -300,15 +319,7 @@ with st.container():
                     note=additional_note  # Pass the additional note
                 )
 
-                # ss.bill_system.verify_bill(bill_id) #commented out because it was causing errors
-                # ss.bill_system.schedule_payment(bill_id) #commented out because it was causing errors
-                print(f"Bill {bill_id} data added and processed.\n")
-
-                # Add the processed bill data to the list
-                ss.all_bill_data.append(bill_data)
-
-            ss.bill_system._update_csv()
-
+            update_csv(ss.bill_data)  # Update the CSV file with the new bill data
             # Load and display the updated CSV file
             df = load_csv('bills.csv')
             if df is not None:
@@ -319,14 +330,9 @@ with st.container():
                 ss.df = None  # if no dataframe store none
 
         except Exception as e:
-            print(f"--- Error During Processing ---")
+            print("--- Error During Processing ---")
             print(f"Error: {e}")
             st.error(f"Error processing data: {e}")
-
-# Display the dataframe
-if ss.df is not None:
-    st.subheader("📊 Processed Bills")
-    st.dataframe(ss.df)
 
 st.divider()
 
@@ -335,6 +341,10 @@ with st.container():  # Create a container for the chat interface
     if ss.df is not None and not ss.df.empty:  # Check if the dataframe exists and is not empty
         st.divider()
         st.subheader("Chat with Gemini about the Processed Bills")
+
+        # Display the DataFrame
+        st.subheader("📊 Processed Bills")
+        st.dataframe(ss.df)
 
         # Concatenate the contents of all processed bills into a single context string
         context = "\n\n".join([str(bill) for bill in ss.all_bill_data])
