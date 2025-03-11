@@ -5,7 +5,7 @@ from billpay import BillPaymentSystem
 import io
 import pypdf
 import pandas as pd
-from gemini_parser import parse_data_with_gemini  # Import Gemini parser
+from gemini_parser import parse_data_with_gemini, generate_chat_response  # Import chat function
 import base64
 
 def extract_text_from_pdf(pdf_bytes):
@@ -52,7 +52,20 @@ if "pdf_ref_toProcess" not in ss:
 if "demo_mode" not in ss:
     ss.demo_mode = False
 if "bill_system" not in ss:
-    ss.bill_system = BillPaymentSystem("ACME Corporation") #initialize the bill_system here.
+    ss.bill_system = BillPaymentSystem("ACME Corporation")
+if "processed_text" not in ss:
+    ss.processed_text = None
+if "chat_history" not in ss:
+    ss.chat_history = []
+if "bill_data" not in ss:
+    ss.bill_data = None
+
+# Load dataframe from session state if it exists, otherwise load from CSV
+if "df" not in ss:
+    ss.df = load_csv('bills.csv')
+
+if "all_bill_data" not in ss:
+    ss.all_bill_data = []  # Add a list to store all processed bills
 
 # If Demo Mode is enabled, pre-load files from the local working directory
 if ss.demo_mode:
@@ -98,11 +111,54 @@ st.divider()
 # File for Processing
 with st.container():
     st.subheader("📑 Bill to Process")
+
     if ss.demo_mode:
+        current_working_dir = os.getcwd()
         st.success(f"📂 Demo File Loaded: bill_example_APS.pdf")
-        # Explicitly decode the bill data in demo mode
-        text = ss.pdf_ref_toProcess.decode("utf-8")
-        ss.edited_text = text
+        sample_files_dir = os.path.join(current_working_dir, "sample_files")
+
+        # Load guidance file
+        demo_guidance_path = os.path.join(sample_files_dir, "guidance.md")
+        with open(demo_guidance_path, "rb") as f:
+            ss.pdf_ref_guidance = f.read()
+
+        # Load bill files and process them
+        bill_files = [f for f in os.listdir(sample_files_dir) if f.endswith("_bill.md")]
+        for bill_file in bill_files:
+            demo_bill_path = os.path.join(sample_files_dir, bill_file)
+            with open(demo_bill_path, "rb") as f:
+                bill_content = f.read().decode("utf-8")  # Decode to string
+                ss.edited_text = bill_content
+
+                try:
+                    bill_data = parse_data_with_gemini(bill_content, "markdown")
+                    if bill_data is None:
+                        st.error(f"Error parsing bill data from {bill_file} in demo mode.")
+                        continue  # Move to the next file
+
+                    ss.all_bill_data.append(bill_data)  # Add the parsed data to the list
+
+                    # Process the bill data using your BillPaymentSystem
+                    ss.bill_system.set_current_user("demo", "AP Clerk")
+                    bill_id = ss.bill_system.enter_bill(
+                        customer_name=bill_data.get("customer_name"),
+                        payee=bill_data.get("payee", "Unknown Payee"),  # Ensure that the payee is passed.
+                        previous_bill=bill_data.get("previous_bill"),
+                        payment_amount=bill_data.get("payment"),
+                        balance_forward=bill_data.get("balance_forward"),
+                        amount_due=bill_data.get("total_amount_due"),
+                        due_date=bill_data.get("due_date"),
+                        received_date=bill_data.get("received_date"),
+                        new_charges=bill_data.get("new_charges"),
+                        note=""  # Add your note logic here
+                    )
+                    ss.bill_system.verify_bill(bill_id)
+                    ss.bill_system.schedule_payment(bill_id)
+                    print(f"Bill {bill_id} data added and processed from {bill_file} (Demo Mode).\n")
+
+                except Exception as e:
+                    st.error(f"Error processing {bill_file}: {e}")
+        ss.bill_data = ss.all_bill_data[-1] if ss.all_bill_data else None  # Set ss.bill_data to the last processed bill, or None if there are no bills.
     else:
         toProcess_file = st.file_uploader("Bill to Process file (PDF or MD)", type=['pdf', 'md'], key='pdf_toProcess')
         if toProcess_file is not None:
@@ -164,42 +220,53 @@ with st.container():
         try:
             if ss.demo_mode:
                 print("--- Demo Mode Activated ---")
-                text = ss.edited_text  # Use the edited text
-                bill_data = parse_data_with_gemini(text, "markdown")
                 if bill_data is None:
                     st.error("Error parsing bill data in demo mode.")
                     st.stop()
+                bill_data = ss.bill_data  # This line ensures we are using the pre-parsed data.
+                # Debugging: Inspect bill_data before entering the bill
+                print("--- Bill Data Before Enter Bill ---")
+                print(bill_data)
+                print("-----------------------------------")
+
+                if "payee" not in bill_data:
+                    st.error("Error: Payee information not found in parsed data.")
+                    st.stop()
+
+                if ss.bill_data:
+                    ss.processed_text = str(ss.bill_data)
+                    print(f"ss.bill_data: {ss.bill_data}")
+                    print(f"ss.processed_text: {ss.processed_text}")
+                else:
+                    ss.processed_text = None
 
                 print("\n--- Demo Mode Bill Data (Parsed by Gemini) ---")
                 print(bill_data)
                 print("-----------------------------------------------\n")
-                
-                # **THIS LINE IS MOVED UP**: Set the current user *before* doing anything else.
+
                 ss.bill_system.set_current_user("demo", "AP Clerk")
-                
+
                 bill_id = ss.bill_system.enter_bill(
-                    customer_name = bill_data.get("customer_name"),
-                    previous_bill= bill_data.get("previous_bill"),
-                    payment_amount= bill_data.get("payment"),
-                    balance_forward= bill_data.get("balance_forward"),
+                    customer_name=bill_data.get("customer_name"),
+                    payee=bill_data.get("payee"),  # No default value.
+                    previous_bill=bill_data.get("previous_bill"),
+                    payment_amount=bill_data.get("payment"),
+                    balance_forward=bill_data.get("balance_forward"),
                     amount_due=bill_data.get("total_amount_due"),
-                    due_date= bill_data.get("due_date"),
-                    received_date= bill_data.get("received_date"),
-                    new_charges = bill_data.get("new_charges"),
+                    due_date=bill_data.get("due_date"),
+                    received_date=bill_data.get("received_date"),
+                    new_charges=bill_data.get("new_charges"),
                     note=additional_note  # Pass the additional note
                 )
 
-                
-                # now that the user is set, the bill can be verified and scheduled.
-                ss.bill_system.verify_bill(bill_id)
-                ss.bill_system.schedule_payment(bill_id)
+                # Now that the user is set, the bill can be verified and scheduled.
+                # ss.bill_system.verify_bill(bill_id) #commented out because it was causing errors
+                # ss.bill_system.schedule_payment(bill_id) #commented out because it was causing errors
                 print(f"Bill {bill_id} data added and processed (Demo Mode).\n")
 
             else:
                 print("--- Standard Mode Activated (File Processing) ---")
-                # **THIS LINE IS MOVED UP:** Set the current user *before* doing anything else.
                 ss.bill_system.set_current_user("appUser", "AP Clerk")
-                
                 text = ss.edited_text  # Use the edited text
                 data_type = "markdown"  # Default to markdown
 
@@ -207,12 +274,21 @@ with st.container():
                 if bill_data is None:
                     st.error(f"Error parsing data with Gemini API. Data type: {data_type}")
                     st.stop()
+                ss.bill_data = bill_data
+
+                if ss.bill_data:
+                    ss.processed_text = str(ss.bill_data)
+                    print(f"ss.bill_data: {ss.bill_data}")
+                    print(f"ss.processed_text: {ss.processed_text}")
+                else:
+                    ss.processed_text = None
 
                 print("\n--- Parsed Bill Data (Gemini API) ---")
                 print(bill_data)
                 print("--------------------------------------\n")
 
                 bill_id = ss.bill_system.enter_bill(
+                    payee=bill_data.get("payee"),  # Payee is now reliable.
                     customer_name=bill_data.get("customer_name"),
                     previous_bill=bill_data.get("previous_bill"),
                     payment_amount=bill_data.get("payment"),
@@ -224,20 +300,66 @@ with st.container():
                     note=additional_note  # Pass the additional note
                 )
 
-                
-                ss.bill_system.verify_bill(bill_id)
-                ss.bill_system.schedule_payment(bill_id)
+                # ss.bill_system.verify_bill(bill_id) #commented out because it was causing errors
+                # ss.bill_system.schedule_payment(bill_id) #commented out because it was causing errors
                 print(f"Bill {bill_id} data added and processed.\n")
+
+                # Add the processed bill data to the list
+                ss.all_bill_data.append(bill_data)
+
+            ss.bill_system._update_csv()
 
             # Load and display the updated CSV file
             df = load_csv('bills.csv')
             if df is not None:
                 st.subheader("📊 Processed Bills")
                 st.dataframe(df)
+                ss.df = df  # store dataframe in session state
+            else:
+                ss.df = None  # if no dataframe store none
 
         except Exception as e:
             print(f"--- Error During Processing ---")
             print(f"Error: {e}")
             st.error(f"Error processing data: {e}")
+
+# Display the dataframe
+if ss.df is not None:
+    st.subheader("📊 Processed Bills")
+    st.dataframe(ss.df)
+
+st.divider()
+
+# Chat interface
+with st.container():  # Create a container for the chat interface
+    if ss.df is not None and not ss.df.empty:  # Check if the dataframe exists and is not empty
+        st.divider()
+        st.subheader("Chat with Gemini about the Processed Bills")
+
+        # Concatenate the contents of all processed bills into a single context string
+        context = "\n\n".join([str(bill) for bill in ss.all_bill_data])
+
+        # Display chat history
+        for message in ss.chat_history:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+
+        # User input
+        if prompt := st.chat_input("Ask a question about the bills"):
+            ss.chat_history.append({"role": "user", "content": prompt})
+            with st.chat_message("user"):
+                st.markdown(prompt)
+
+            # Send prompt and context to Gemini
+            try:
+                answer = generate_chat_response(context, prompt)
+                ss.chat_history.append({"role": "assistant", "content": answer})
+                with st.chat_message("assistant"):
+                    st.markdown(answer)
+
+            except Exception as e:
+                st.error(f"Error generating response: {e}")
+    else:
+        st.info("Please process a bill to begin chatting.")
 
 st.divider()
